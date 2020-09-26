@@ -1,0 +1,28 @@
+{
+  "name": "memembed",
+  "version": "0.1.0",
+  "description": "A simple embeddable memstore with optional persistence",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "livetest": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^26.4.2",
+    "rimraf": "^3.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markomannux/memembed.git"
+  },
+  "keywords": [
+    "memstore",
+    "node"
+  ],
+  "author": "Marco Mannucci",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/markomannux/memembed/issues"
+  },
+  "homepage": "https://github.com/markomannux/memembed#readme"
+}
