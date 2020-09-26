@@ -12,7 +12,7 @@ class Store extends EventEmitter {
         super();
         this.store = {}
     }
-    set = function (key, value, ttl) {
+    set(key, value, ttl) {
         if (this.store[key]) {
             this.store[key].invalidateTtl();
         }
@@ -24,21 +24,21 @@ class Store extends EventEmitter {
         });
     }
 
-    get = function (key) {
+    get(key) {
         const data = this.store[key];
         return new Promise((resolve, reject) => {
             resolve(data && data.getValue());
         });
     }
 
-    ttl = function (key) {
+    ttl(key) {
         const left = this.store[key].ttl();
         return new Promise((resolve, reject) => {
             resolve(left);
         });
     }
 
-    del = function (key) {
+    del(key) {
         return new Promise((resolve, reject) => {
             if (this.store[key]) {
                 this.store[key].invalidateTtl();
@@ -49,7 +49,7 @@ class Store extends EventEmitter {
         })
     }
 
-    clear = function () {
+    clear() {
         const promises = [];
         for (const key in this.store) {
             promises.push(this.del(key));
@@ -58,9 +58,10 @@ class Store extends EventEmitter {
         return Promise.all(promises);
     }
 
-    handleTtlExpired = (entry) => {
+    handleTtlExpired(entry) {
+        const _store = this.store;
         return () => {
-            delete this.store[entry.key];
+            delete _store[entry.key];
             this.emit('key:expired', entry.key);
         }
     }
