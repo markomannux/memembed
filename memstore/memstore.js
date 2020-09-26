@@ -1,24 +1,73 @@
-
 const fs = require('fs');
-const store = { }
+const EventEmitter = require("events");
+
 const storedataPath = process.env.STOREDATA || 'storedata';
 
-if(!fs.existsSync(storedataPath)) {
+if (!fs.existsSync(storedataPath)) {
     fs.mkdirSync(storedataPath, {});
 }
 
-function handleTtlExpired(entry) {
-    return function() {
-        delete store[entry.key];
-        fs.unlink(`${storedataPath}/${entry.key}`, (err) => {
-            if (err) {
-                throw err;
+class Store extends EventEmitter {
+    constructor() {
+        super();
+        this.store = {}
+    }
+    set = function (key, value, ttl) {
+        if (this.store[key]) {
+            this.store[key].invalidateTtl();
+        }
+        this.store[key] = new StoreEntry(key, value, ttl, this);
+        const entryValue = this.store[key].getValue();
+        return new Promise((resolve, reject) => {
+            this.emit('key:set', key);
+            resolve(entryValue);
+        });
+    }
+
+    get = function (key) {
+        const data = this.store[key];
+        return new Promise((resolve, reject) => {
+            resolve(data && data.getValue());
+        });
+    }
+
+    ttl = function (key) {
+        const left = this.store[key].ttl();
+        return new Promise((resolve, reject) => {
+            resolve(left);
+        });
+    }
+
+    del = function (key) {
+        return new Promise((resolve, reject) => {
+            if (this.store[key]) {
+                this.store[key].invalidateTtl();
+                delete this.store[key];
+                this.emit('key:del', key);
+                resolve();
             }
         })
     }
+
+    clear = function () {
+        const promises = [];
+        for (const key in this.store) {
+            promises.push(this.del(key));
+        }
+
+        return Promise.all(promises);
+    }
+
+    handleTtlExpired = (entry) => {
+        return () => {
+            delete this.store[entry.key];
+            this.emit('key:expired', entry.key);
+        }
+    }
 }
 
-function StoreEntry(key, value, ttl) {
+
+function StoreEntry(key, value, ttl, store) {
     this.key = key;
     this._value = JSON.stringify(value);
     this.getValue = () => JSON.parse(this._value);
@@ -32,7 +81,7 @@ function StoreEntry(key, value, ttl) {
     if (ttl) {
         this.initialTtl = ttl;
         this.start = performance.now();
-        this.timer = setTimeout(handleTtlExpired(this), ttl)
+        this.timer = setTimeout(store.handleTtlExpired(this), ttl)
         this.ttl = () => {
             return this.initialTtl - (performance.now() - this.start);
         }
@@ -41,61 +90,26 @@ function StoreEntry(key, value, ttl) {
     }
 };
 
-function set(key, value, ttl) {
-    if (store[key]) {
-        store[key].invalidateTtl();
-    }
-    store[key] = new StoreEntry(key, value, ttl);
-    const entryValue = store[key].getValue();
-    return new Promise((resolve, reject) => {
-        fs.writeFile(`${storedataPath}/${key}`, store[key]._value,  (err, data) => {
-            resolve(entryValue);
-        })
-    });
-}
+const storeInstance = new Store();
 
-function get(key) {
-    const data = store[key];
-    return new Promise((resolve, reject) => {
-        resolve(data && data.getValue());
-    });
-}
+storeInstance.on('key:set', (key) => {
+    fs.writeFile(`${storedataPath}/${key}`, storeInstance.store[key]._value, (err, data) => { })
+})
 
-function ttl(key) {
-    const left = store[key].ttl();
-    return new Promise((resolve, reject) => {
-        resolve(left);
-    });
-}
-
-function del(key) {
-    return new Promise((resolve, reject) => {
-        if (store[key]) {
-            store[key].invalidateTtl();
-            fs.unlink(`${storedataPath}/${key}`, (err) => {
-                if (err) {
-                    throw err;
-                }
-                delete store[key];
-                resolve();
-            })
+function unlink(key) {
+    fs.unlink(`${storedataPath}/${key}`, (err) => {
+        if (err) {
+            throw err;
         }
     })
 }
 
-function clear() {
-    const promises = [];
-    for(const key in store) {
-        promises.push(del(key));
-    }
+storeInstance.on('key:del', (key) => {
+    unlink(key);
+})
 
-    return Promise.all(promises);
-}
+storeInstance.on('key:expired', (key) => {
+    unlink(key);
+})
 
-module.exports = {
-    set,
-    get,
-    del,
-    clear,
-    ttl
-}
+module.exports = storeInstance;
