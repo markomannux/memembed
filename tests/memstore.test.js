@@ -1,5 +1,5 @@
 const fs = require('fs');
-const memstore = require('./memstore');
+const memstore = require('../index');
 const rimraf = require('rimraf');
 
 afterAll((done) => {
