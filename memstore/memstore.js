@@ -46,6 +46,19 @@ class Store extends EventEmitter {
         });
     }
 
+    memoize(key, objectCreationFunction, ttl) {
+        return this.get(key)
+        .then(data => {
+            if(data) {
+                return data;
+            }
+
+            this.set(key, objectCreationFunction(), ttl);
+            return this.get(key);
+        })
+
+    }
+
     ttl(key) {
         const left = this.store[key].ttl();
         return new Promise((resolve, reject) => {
@@ -88,7 +101,6 @@ class Store extends EventEmitter {
             }
         })
     }
-
 
 }
 
