@@ -1,13 +1,15 @@
 const fs = require('fs');
-const memembed = require('../index');
+const Store = require('../index');
 const rimraf = require('rimraf');
+
+const DEFAULT_STOREDATA_DIR = 'storedata';
 
 afterAll((done) => {
     ensureStoredataDirIsEmpty(done)
 })
 
 function ensureStoredataDirIsEmpty(done) {
-    rimraf('storedata', done);
+    rimraf(DEFAULT_STOREDATA_DIR, done);
 }
 
 function randomizeKey(key) {
@@ -16,6 +18,8 @@ function randomizeKey(key) {
 
 describe('Store entry handling', () => {
 
+    const enablePersistence = false;
+    const memembed = new Store(enablePersistence);
 
     test('I can insert a new key in the store', async () => {
         const data = await memembed.set(randomizeKey('test-key'), 'test-value')
@@ -85,10 +89,35 @@ describe('Store entry handling', () => {
         expect(data).toBe('test-value2');
     })
 
+    test('I can clear all the cache', async () => {
+        const testObject = {
+            a: "I'm an object"
+        }
+        const objectKey = randomizeKey('test-object');
+        const testKey = randomizeKey('test-key');
+        await memembed.set(objectKey, testObject);
+        await memembed.set(testKey, 'test-key');
+        await memembed.clear();
+        let data = await memembed.get(objectKey);
+        expect(data).toBeUndefined();
+        data = await memembed.get(testKey);
+        expect(data).toBeUndefined();
+    })
+
+    test('Store data dir does not exist', () => {
+        expect(fs.existsSync(DEFAULT_STOREDATA_DIR)).toBe(true);
+    })
+})
+
+describe("Store persistence on disk", () => {
+
+    const enablePersistence = true;
+    const memembed = new Store(enablePersistence);
+
     test('Entry data is stored to disk', async () => {
         const key = randomizeKey('test-string');
         await memembed.set(key, 'test-value');
-        fs.readFile(`storedata/${key}`, 'utf8', (err, data) => {
+        fs.readFile(`${DEFAULT_STOREDATA_DIR}/${key}`, 'utf8', (err, data) => {
             if (err) throw err;
             expect(data).toBe(JSON.stringify('test-value'));
         });
@@ -100,7 +129,7 @@ describe('Store entry handling', () => {
         }
         const key = randomizeKey('test-object');
         await memembed.set(key, testObject);
-        fs.readFile(`storedata/${key}`, 'utf8', (err, data) => {
+        fs.readFile(`${DEFAULT_STOREDATA_DIR}/${key}`, 'utf8', (err, data) => {
             if (err) throw err;
             expect(data).toBe(JSON.stringify(testObject));
         });
@@ -112,7 +141,7 @@ describe('Store entry handling', () => {
         await memembed.set(key, 'test-value', 2000);
         jest.runAllTimers();
         setTimeout(() => {
-            expect(fs.existsSync(`storedata/${key}`)).toBe(false);
+            expect(fs.existsSync(`${DEFAULT_STOREDATA_DIR}/${key}`)).toBe(false);
         }, 100);
     })
 
@@ -131,28 +160,16 @@ describe('Store entry handling', () => {
         await memembed.set(key, 'test-value');
         await memembed.del(key)
         setTimeout(() => {
-            expect(fs.existsSync('storedata/test-key')).toBe(false);
+            expect(fs.existsSync(`${DEFAULT_STOREDATA_DIR}/${key}`)).toBe(false);
         }, 100);
-    })
-
-    test('I can clear all the cache', async () => {
-        const testObject = {
-            a: "I'm an object"
-        }
-        const objectKey = randomizeKey('test-object');
-        const testKey = randomizeKey('test-key');
-        await memembed.set(objectKey, testObject);
-        await memembed.set(testKey, 'test-key');
-        await memembed.clear();
-        let data = await memembed.get(objectKey);
-        expect(data).toBeUndefined();
-        data = await memembed.get(testKey);
-        expect(data).toBeUndefined();
     })
 
 })
 
 describe("Event emission", () => {
+    const enablePersistence = false;
+    const memembed = new Store(enablePersistence);
+
     test('When key is set, key:set is emitted', async () => {
         const callback = jest.fn();
         memembed.on('key:set', callback);

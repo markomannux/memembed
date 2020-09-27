@@ -5,7 +5,9 @@ A simple embeddable memstore with optional persistence
 
 ## Usage
 ```javascript
-const memembed = require('memembed');
+const Memembed = require('memembed');
+
+const memembed = new Memembed();
 
 /*
  * Setting a new key in the store
