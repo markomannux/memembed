@@ -3,15 +3,30 @@ const EventEmitter = require("events");
 
 const storedataPath = process.env.STOREDATA || 'storedata';
 
-if (!fs.existsSync(storedataPath)) {
-    fs.mkdirSync(storedataPath, {});
-}
-
 class Store extends EventEmitter {
-    constructor() {
+    constructor(enablePersistence) {
         super();
         this.store = {}
+
+        if (enablePersistence) {
+            if (!fs.existsSync(storedataPath)) {
+                fs.mkdirSync(storedataPath, {});
+            }
+
+            this.on('key:set', (key) => {
+                fs.writeFile(`${storedataPath}/${key}`, this.store[key]._value, (err, data) => { })
+            })
+
+            this.on('key:del', (key) => {
+                this.unlink(key);
+            })
+
+            this.on('key:expired', (key) => {
+                this.unlink(key);
+            })
+        }
     }
+
     set(key, value, ttl) {
         if (this.store[key]) {
             this.store[key].invalidateTtl();
@@ -65,6 +80,16 @@ class Store extends EventEmitter {
             this.emit('key:expired', entry.key);
         }
     }
+
+    unlink(key) {
+        fs.unlink(`${storedataPath}/${key}`, (err) => {
+            if (err) {
+                throw err;
+            }
+        })
+    }
+
+
 }
 
 
@@ -91,26 +116,5 @@ function StoreEntry(key, value, ttl, store) {
     }
 };
 
-const storeInstance = new Store();
 
-storeInstance.on('key:set', (key) => {
-    fs.writeFile(`${storedataPath}/${key}`, storeInstance.store[key]._value, (err, data) => { })
-})
-
-function unlink(key) {
-    fs.unlink(`${storedataPath}/${key}`, (err) => {
-        if (err) {
-            throw err;
-        }
-    })
-}
-
-storeInstance.on('key:del', (key) => {
-    unlink(key);
-})
-
-storeInstance.on('key:expired', (key) => {
-    unlink(key);
-})
-
-module.exports = storeInstance;
+module.exports = Store;
