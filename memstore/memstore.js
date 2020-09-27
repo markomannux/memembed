@@ -92,7 +92,6 @@ class Store extends EventEmitter {
 
 }
 
-
 function StoreEntry(key, value, ttl, store) {
     this.key = key;
     this._value = JSON.stringify(value);

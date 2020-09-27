@@ -4,9 +4,6 @@ const rimraf = require('rimraf');
 
 const DEFAULT_STOREDATA_DIR = 'storedata';
 
-afterAll((done) => {
-    ensureStoredataDirIsEmpty(done)
-})
 
 function ensureStoredataDirIsEmpty(done) {
     rimraf(DEFAULT_STOREDATA_DIR, done);
@@ -113,6 +110,10 @@ describe("Store persistence on disk", () => {
 
     const enablePersistence = true;
     const memembed = new Store(enablePersistence);
+
+    afterAll((done) => {
+        ensureStoredataDirIsEmpty(done)
+    })
 
     test('Entry data is stored to disk', async () => {
         const key = randomizeKey('test-string');
