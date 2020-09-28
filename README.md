@@ -48,6 +48,11 @@ Optionally sets a TTL for the key, after which the key is deleted. If no TTL is 
 Retrieves the value associated to the key in the store.  
 The value is JSON parsed before being returned.
 
+### memoizw(key, fn)
+Retrieves the value associated to the key in the store.  
+If the key does not exists, `fn` is executed to determine its value and the result is then stored in memembed.
+The value is JSON parsed before being returned.
+
 ### del(key)
 Deletes the value associated to the key in the store and remove the key.  
 
