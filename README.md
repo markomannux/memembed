@@ -26,6 +26,17 @@ memembed.get('some-key')
 });
 ```
 
+## Options
+`Memembed` may be instantiated with the following arguments:
+
+```javascript
+const memembed = new Memembed(enablePersistence, storedataPath)
+```
+Name | Description
+-----|-------------
+enablePersistence | Enable persistence on disk
+storedataPath | Optional path of the directory where data is persisted. It defaults to `storedata`
+
 ## API
 
 ### set(key, value, [ttl])
@@ -35,6 +46,11 @@ Optionally sets a TTL for the key, after which the key is deleted. If no TTL is 
 
 ### get(key)
 Retrieves the value associated to the key in the store.  
+The value is JSON parsed before being returned.
+
+### memoizw(key, fn)
+Retrieves the value associated to the key in the store.  
+If the key does not exists, `fn` is executed to determine its value and the result is then stored in memembed.
 The value is JSON parsed before being returned.
 
 ### del(key)
