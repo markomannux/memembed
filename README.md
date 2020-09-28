@@ -26,6 +26,17 @@ memembed.get('some-key')
 });
 ```
 
+## Options
+`Memembed` may be instantiated with the following arguments:
+
+```javascript
+const memembed = new Memembed(enablePersistence, storedataPath)
+```
+Name | Description
+-----|-------------
+enablePersistence | Enable persistence on disk
+storedataPath | Optional path of the directory where data is persisted. It defaults to `storedata`
+
 ## API
 
 ### set(key, value, [ttl])
