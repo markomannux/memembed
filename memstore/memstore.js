@@ -1,29 +1,15 @@
-const fs = require('fs');
 const EventEmitter = require("events");
-
-const storedataPath = process.env.STOREDATA || 'storedata';
+const StorePersistence = require('./persistence');
 
 class Store extends EventEmitter {
-    constructor(enablePersistence) {
+    constructor(enablePersistence, storedataPath) {
         super();
         this.store = {}
 
+        this.storedataPath = storedataPath || 'storedata';
+
         if (enablePersistence) {
-            if (!fs.existsSync(storedataPath)) {
-                fs.mkdirSync(storedataPath, {});
-            }
-
-            this.on('key:set', (key) => {
-                fs.writeFile(`${storedataPath}/${key}`, this.store[key]._value, (err, data) => { })
-            })
-
-            this.on('key:del', (key) => {
-                this.unlink(key);
-            })
-
-            this.on('key:expired', (key) => {
-                this.unlink(key);
-            })
+            this.storePersistence = new StorePersistence(this);
         }
     }
 
@@ -34,7 +20,7 @@ class Store extends EventEmitter {
         this.store[key] = new StoreEntry(key, value, ttl, this);
         const entryValue = this.store[key].getValue();
         return new Promise((resolve, reject) => {
-            this.emit('key:set', key);
+            this.emit('key:set', key, value);
             resolve(entryValue);
         });
     }
@@ -93,15 +79,6 @@ class Store extends EventEmitter {
             this.emit('key:expired', entry.key);
         }
     }
-
-    unlink(key) {
-        fs.unlink(`${storedataPath}/${key}`, (err) => {
-            if (err) {
-                throw err;
-            }
-        })
-    }
-
 }
 
 function StoreEntry(key, value, ttl, store) {

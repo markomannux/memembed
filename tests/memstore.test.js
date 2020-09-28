@@ -101,9 +101,6 @@ describe('Store entry handling', () => {
         expect(data).toBeUndefined();
     })
 
-    test('Store data dir does not exist', () => {
-        expect(fs.existsSync(DEFAULT_STOREDATA_DIR)).toBe(true);
-    })
 })
 
 describe('Memoization', () => {
@@ -222,7 +219,7 @@ describe("Event emission", () => {
         memembed.on('key:set', callback);
         const testKey = randomizeKey('test-key');
         await memembed.set(testKey, 'test-key');
-        expect(callback).toHaveBeenCalledWith(testKey);
+        expect(callback).toHaveBeenCalledWith(testKey, 'test-key');
     })
 
     test('When key is delets, key:del is emitted', async () => {
