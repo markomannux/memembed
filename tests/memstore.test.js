@@ -149,6 +149,52 @@ describe('Memoization', () => {
 
 })
 
+describe('Memoization', () => {
+
+    const enablePersistence = false;
+    const memembed = new Store(enablePersistence);
+
+    test('Momoized object if first created in callback code', async () => {
+        const key = randomizeKey('test-key');
+
+        const objectToMemoize = {
+                'some-key': 'some-value'
+            }
+        const objectCreationCallback = jest.fn(() => objectToMemoize);
+        const data = await memembed.memoize(key, objectCreationCallback);
+        expect(objectCreationCallback).toBeCalled();
+        expect(data).toEqual(objectToMemoize);
+    })
+
+    test('Already momoized object are retrieved from cache', async () => {
+        const key = randomizeKey('test-key');
+
+        const objectToMemoize = {
+                'some-key': 'some-value'
+            }
+        const objectCreationCallback = jest.fn(() => objectToMemoize);
+        await memembed.memoize(key, objectCreationCallback);
+        const data = await memembed.memoize(key, objectCreationCallback);
+        expect(objectCreationCallback).toBeCalledTimes(1);
+        expect(data).toEqual(objectToMemoize);
+    })
+
+    test('I can set TTL for memoized objects', async () => {
+        jest.useFakeTimers();
+        const key = randomizeKey('test-key');
+
+        const objectToMemoize = {
+                'some-key': 'some-value'
+            }
+        const objectCreationCallback = jest.fn(() => objectToMemoize);
+        await memembed.memoize(key, objectCreationCallback, 2000);
+        jest.runAllTimers();
+        const data = await memembed.get(key);
+        expect(data).toBeUndefined();
+    })
+
+})
+
 describe("Store persistence on disk", () => {
 
     const enablePersistence = true;
